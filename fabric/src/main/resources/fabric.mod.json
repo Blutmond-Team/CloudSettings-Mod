@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "CloudSettings",
+  "id": "cloudsettings",
   "version": "${version}",
 
   "name": "CloudSettings",
