@@ -41,7 +41,7 @@ shadowJar {
 remapJar {
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set(null)
+    archiveClassifier.set("fabric")
 }
 
 jar {
@@ -73,3 +73,9 @@ publishing {
         // Add repositories to publish to here.
     }
 }
+
+tasks.register('copyResult', Copy) {
+    from "${project.getProjectDir().toString()}/build/libs/${archivesBaseName}-${version}-fabric.jar"
+    into "${rootProject.getProjectDir().toString()}/build/libs/"
+}
+build.finalizedBy(copyResult);

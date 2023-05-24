@@ -1,0 +1,53 @@
+package de.blutmondgilde.cloudsettings.api;
+
+import com.google.gson.Gson;
+import de.blutmondgilde.cloudsettings.CloudSettings;
+import de.blutmondgilde.cloudsettings.api.pojo.OptionsResponse;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class CloudSettingsAPI {
+    private static final Gson GSON = new Gson();
+    private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
+    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final String baseUrl = "http://localhost:3000/api";
+
+    public static CompletableFuture<String[]> getStoredOptions() {
+        CompletableFuture<String[]> future = new CompletableFuture<>();
+
+        executor.submit(() -> {
+            HttpGet request = get("/storage");
+            try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+                OptionsResponse optionsResponse = resolveJsonBody(response, OptionsResponse.class);
+                future.complete(optionsResponse.getOptions());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return future;
+    }
+
+    private static HttpGet get(final String url) {
+        HttpGet get = new HttpGet(baseUrl + url);
+        get.addHeader("Authorization", CloudSettings.getUser().getAccessToken());
+        get.addHeader("Content-Type", "application/json");
+        get.addHeader("Accept", "application/json");
+        return get;
+    }
+
+    private static <T> T resolveJsonBody(CloseableHttpResponse response, Class<T> pojoClass) throws IOException {
+        HttpEntity entity = response.getEntity();
+        String responseBody = EntityUtils.toString(entity);
+        return GSON.fromJson(responseBody, pojoClass);
+    }
+}

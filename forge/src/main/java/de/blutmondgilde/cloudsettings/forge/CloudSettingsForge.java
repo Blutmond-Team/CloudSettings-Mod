@@ -1,8 +1,8 @@
 package de.blutmondgilde.cloudsettings.forge;
 
+import de.blutmondgilde.cloudsettings.CloudSettings;
 import de.blutmondgilde.cloudsettings.IPlatformHandler;
 import me.shedaniel.architectury.platform.forge.EventBuses;
-import de.blutmondgilde.cloudsettings.CloudSettings;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
