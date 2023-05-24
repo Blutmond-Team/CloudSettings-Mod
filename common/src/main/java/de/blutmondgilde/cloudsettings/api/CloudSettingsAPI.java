@@ -15,12 +15,11 @@ import org.apache.http.util.EntityUtils;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class CloudSettingsAPI {
     private static final Gson GSON = new Gson();
     private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final ExecutorService executor = CloudSettings.getExecutor();
     private static final String baseUrl = "http://localhost:3000/api";
 
     public static CompletableFuture<String[]> getStoredOptions() {
@@ -48,6 +47,10 @@ public class CloudSettingsAPI {
     }
 
     public static void storeSettings(String[] settings) {
+        if (settings.length == 0) {
+            CloudSettings.getPlatformHandler().getLogger().info("Skipping sync due to no changes.");
+            return;
+        }
         executor.submit(() -> {
             HttpPost request = post("/storage/options");
             try {
