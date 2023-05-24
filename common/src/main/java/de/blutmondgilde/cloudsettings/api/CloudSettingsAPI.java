@@ -29,8 +29,16 @@ public class CloudSettingsAPI {
         executor.submit(() -> {
             HttpGet request = get("/storage/options");
             try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-                OptionsResponse optionsResponse = resolveJsonBody(response, OptionsResponse.class);
-                future.complete(optionsResponse.getOptions());
+                if (response.getStatusLine().getStatusCode() == 200) {
+                    OptionsResponse optionsResponse = resolveJsonBody(response, OptionsResponse.class);
+                    future.complete(optionsResponse.getOptions());
+                } else {
+                    CloudSettings.getPlatformHandler()
+                            .getLogger()
+                            .error("Error on loading Options from Cloud.\nStatus Code: {}\nStatus Text: {}",
+                                    response.getStatusLine().getStatusCode(),
+                                    response.getStatusLine().getReasonPhrase());
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -45,7 +53,15 @@ public class CloudSettingsAPI {
             try {
                 StringEntity body = new StringEntity(GSON.toJson(new OptionsResponse(settings)));
                 request.setEntity(body);
-                HTTP_CLIENT.execute(request);
+                try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+                    if (response.getStatusLine().getStatusCode() != 200) {
+                        CloudSettings.getPlatformHandler()
+                                .getLogger()
+                                .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
+                                        response.getStatusLine().getStatusCode(),
+                                        response.getStatusLine().getReasonPhrase());
+                    }
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -1,6 +1,7 @@
 package de.blutmondgilde.cloudsettings;
 
 import de.blutmondgilde.cloudsettings.api.CloudSettingsAPI;
+import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import org.apache.commons.io.FileUtils;
@@ -17,6 +18,7 @@ import java.util.concurrent.Executors;
 
 public class CloudSettings {
     public static final String MOD_ID = "cloudsettings";
+    @Getter
     private static IPlatformHandler platformHandler;
     private static boolean initialized = false;
     private static final ConcurrentHashMap<String, String> CACHE = new ConcurrentHashMap<>();
