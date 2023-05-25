@@ -13,6 +13,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -31,9 +33,11 @@ public class CloudSettings {
     private static final ConcurrentHashMap<String, String> PendingChanges = new ConcurrentHashMap<>();
     @Getter
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final ConcurrentHashMap<String, Runnable> SPECIAL_ACTIONS = new ConcurrentHashMap<>();
 
     public static void init(IPlatformHandler handler) {
         platformHandler = handler;
+        SPECIAL_ACTIONS.put("lang", () -> Minecraft.getInstance().reloadResourcePacks());
     }
 
     public static User getUser() {
@@ -43,6 +47,7 @@ public class CloudSettings {
     public static void titleScreenOpened() {
         if (isInitialized()) return;
         Minecraft.getInstance().execute(() -> {
+            List<Runnable> postApplyActions = new ArrayList<>();
             platformHandler.getLogger().info("Requesting User Data");
             try {
                 Set<String> options = Sets.newHashSet(CloudSettingsAPI.getStoredOptions().get());
@@ -65,7 +70,10 @@ public class CloudSettings {
                                     .findFirst()
                                     .orElse(line);
                             if (options.remove(newOptionLine)) {
-                                platformHandler.getLogger().info("Applied {} with value {} to options", optionId, newOptionLine);
+                                platformHandler.getLogger().debug("Applied {} with value {} to options", optionId, newOptionLine);
+                                if (SPECIAL_ACTIONS.containsKey(optionId)) {
+                                    postApplyActions.add(SPECIAL_ACTIONS.get(optionId));
+                                }
                             }
 
                             optionLines.append(newOptionLine).append('\n');
@@ -73,7 +81,13 @@ public class CloudSettings {
                         reader.close();
 
                         for (String cloudOption : options) {
+                            String optionId = cloudOption.substring(0, cloudOption.indexOf(':'));
+                            platformHandler.getLogger().debug("Applied {} with value {} to options", optionId, cloudOption);
                             optionLines.append(cloudOption).append('\n');
+
+                            if (SPECIAL_ACTIONS.containsKey(optionId)) {
+                                postApplyActions.add(SPECIAL_ACTIONS.get(optionId));
+                            }
                         }
 
                         FileUtils.write(platformHandler.getOptionsFile(), optionLines.toString(), StandardCharsets.UTF_8, false);
@@ -83,6 +97,10 @@ public class CloudSettings {
 
                     // Reload Options
                     Minecraft.getInstance().options.load();
+                    // Run special actions if necessary
+                    for (Runnable postApplyAction : postApplyActions) {
+                        postApplyAction.run();
+                    }
                 }
 
                 setInitialized(true);
@@ -105,7 +123,7 @@ public class CloudSettings {
             while (line != null) {
                 String id = line.substring(0, line.indexOf(':'));
                 if (CACHE.containsKey(id) && !CACHE.get(id).equalsIgnoreCase(line)) {
-                    PendingChanges.put(id,line);
+                    PendingChanges.put(id, line);
                     platformHandler.getLogger().info("Enqueue sync of {} with value {}", id, line);
                 }
                 CACHE.put(id, line);
