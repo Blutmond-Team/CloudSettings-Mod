@@ -4,15 +4,21 @@ import com.google.gson.Gson;
 import de.blutmondgilde.cloudsettings.CloudSettings;
 import de.blutmondgilde.cloudsettings.api.pojo.OptionsResponse;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -22,7 +28,21 @@ import java.util.concurrent.TimeUnit;
 
 public class CloudSettingsAPI {
     private static final Gson GSON = new Gson();
-    private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
+    private static final CloseableHttpClient HTTP_CLIENT = httpClient();
+
+    private static CloseableHttpClient httpClient() {
+        try {
+            SSLContextBuilder builder = new SSLContextBuilder();
+            builder.loadTrustMaterial(null, (x509Certificates, s) -> true);
+            SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+            CloseableHttpClient client = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+            return client;
+        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     //private static final String baseUrl = "http://localhost:3000/api";
     private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api";
@@ -81,17 +101,19 @@ public class CloudSettingsAPI {
 
     private static HttpGet get(final String url) {
         HttpGet get = new HttpGet(baseUrl + url);
-        get.addHeader("Authorization", CloudSettings.getUser().getAccessToken());
-        get.addHeader("Content-Type", "application/json");
-        get.addHeader("Accept", "application/json");
+        get.addHeader(HttpHeaders.AUTHORIZATION, CloudSettings.getUser().getAccessToken());
+        get.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        get.addHeader(HttpHeaders.ACCEPT, "application/json");
+        get.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.16.5 %s)", CloudSettings.getPlatformHandler().getModVersion()));
         return get;
     }
 
     private static HttpPost post(final String url) {
         HttpPost post = new HttpPost(baseUrl + url);
-        post.addHeader("Authorization", CloudSettings.getUser().getAccessToken());
-        post.addHeader("Content-Type", "application/json");
-        post.addHeader("Accept", "application/json");
+        post.addHeader(HttpHeaders.AUTHORIZATION, CloudSettings.getUser().getAccessToken());
+        post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        post.addHeader(HttpHeaders.ACCEPT, "application/json");
+        post.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.16.5 %s)", CloudSettings.getPlatformHandler().getModVersion()));
         return post;
     }
 

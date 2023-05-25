@@ -2,6 +2,7 @@ package de.blutmondgilde.cloudsettings.forge;
 
 import de.blutmondgilde.cloudsettings.CloudSettings;
 import de.blutmondgilde.cloudsettings.IPlatformHandler;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,5 +18,10 @@ public class CloudSettingsForge implements IPlatformHandler {
     @Override
     public Logger getLogger() {
         return LOGGER;
+    }
+
+    @Override
+    public String getModVersion() {
+        return ModList.get().getModContainerById(CloudSettings.MOD_ID).get().getModInfo().getVersion().toString();
     }
 }

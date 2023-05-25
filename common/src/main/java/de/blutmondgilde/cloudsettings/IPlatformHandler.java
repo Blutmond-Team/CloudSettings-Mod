@@ -11,4 +11,6 @@ public interface IPlatformHandler {
     default File getOptionsFile() {
         return Minecraft.getInstance().gameDirectory.toPath().resolve("options.txt").toFile();
     }
+
+    String getModVersion();
 }

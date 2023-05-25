@@ -13,8 +13,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -33,17 +31,9 @@ public class CloudSettings {
     private static final ConcurrentHashMap<String, String> PendingChanges = new ConcurrentHashMap<>();
     @Getter
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private static final ConcurrentHashMap<String, Runnable> SPECIAL_ACTIONS = new ConcurrentHashMap<>();
 
     public static void init(IPlatformHandler handler) {
         platformHandler = handler;
-        SPECIAL_ACTIONS.put("lang", () -> {
-            try {
-                Minecraft.getInstance().reloadResourcePacks().get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        });
     }
 
     public static User getUser() {
@@ -53,14 +43,13 @@ public class CloudSettings {
     public static void titleScreenOpened() {
         if (isInitialized()) return;
         Minecraft.getInstance().execute(() -> {
-            List<Runnable> postApplyActions = new ArrayList<>();
             platformHandler.getLogger().info("Requesting User Data");
             try {
                 Set<String> options = Sets.newHashSet(CloudSettingsAPI.getStoredOptions().get());
                 platformHandler.getLogger().info("Got {} options from Cloud", options.size());
                 if (options.size() != 0) {
                     if (!platformHandler.getOptionsFile().exists()) {
-                        platformHandler.getLogger().info("Save vanilla config file");
+                        platformHandler.getLogger().debug("Save vanilla config file");
                         Minecraft.getInstance().options.save();
                     }
 
@@ -76,42 +65,35 @@ public class CloudSettings {
                                     .findFirst()
                                     .orElse(line);
                             if (options.remove(newOptionLine)) {
-                                platformHandler.getLogger().debug("Applied {} with value {} to options", optionId, newOptionLine);
-                                if (SPECIAL_ACTIONS.containsKey(optionId)) {
-                                    postApplyActions.add(SPECIAL_ACTIONS.get(optionId));
-                                }
+                                platformHandler.getLogger().debug("Updated {} with value {} to options", optionId, newOptionLine);
                             }
 
                             optionLines.append(newOptionLine).append('\n');
                         }
                         reader.close();
+                        platformHandler.getLogger().debug("Option Updating complete. Applying {} remaining Options", options.size());
 
                         for (String cloudOption : options) {
                             String optionId = cloudOption.substring(0, cloudOption.indexOf(':'));
                             platformHandler.getLogger().debug("Applied {} with value {} to options", optionId, cloudOption);
                             optionLines.append(cloudOption).append('\n');
-
-                            if (SPECIAL_ACTIONS.containsKey(optionId)) {
-                                postApplyActions.add(SPECIAL_ACTIONS.get(optionId));
-                            }
                         }
 
+                        platformHandler.getLogger().debug("Options applied. Writing option file...");
                         FileUtils.write(platformHandler.getOptionsFile(), optionLines.toString(), StandardCharsets.UTF_8, false);
+                        platformHandler.getLogger().debug("Option file written");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
+                    platformHandler.getLogger().debug("Loading newly written option file");
                     // Reload Options
                     Minecraft.getInstance().options.load();
-                    // Run special actions if necessary
-                    for (Runnable postApplyAction : postApplyActions) {
-                        postApplyAction.run();
-                    }
+                    platformHandler.getLogger().debug("Loaded option file.");
+                    setInitialized(true);
+                    // Cache settings
+                    checkForChanges();
                 }
-
-                setInitialized(true);
-                // Cache settings
-                checkForChanges();
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
@@ -120,7 +102,7 @@ public class CloudSettings {
 
     public static void checkForChanges() {
         if (!isInitialized()) {
-            platformHandler.getLogger().info("Skipping change check due to uninitialized base handler");
+            platformHandler.getLogger().debug("Skipping change check due to uninitialized base handler");
             return;
         }
 

@@ -4,6 +4,7 @@ import de.blutmondgilde.cloudsettings.CloudSettings;
 import de.blutmondgilde.cloudsettings.IPlatformHandler;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screens.TitleScreen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +15,11 @@ public class CloudSettingsFabric implements ClientModInitializer, IPlatformHandl
     @Override
     public Logger getLogger() {
         return LOGGER;
+    }
+
+    @Override
+    public String getModVersion() {
+        return FabricLoader.getInstance().getModContainer(CloudSettings.MOD_ID).get().getMetadata().getVersion().getFriendlyString();
     }
 
     @Override
