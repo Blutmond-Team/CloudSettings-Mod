@@ -40,6 +40,7 @@ public class CloudSettingsAPI {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                future.complete(new String[0]);
             }
         });
 
