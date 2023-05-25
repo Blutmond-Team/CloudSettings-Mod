@@ -37,7 +37,13 @@ public class CloudSettings {
 
     public static void init(IPlatformHandler handler) {
         platformHandler = handler;
-        SPECIAL_ACTIONS.put("lang", () -> Minecraft.getInstance().reloadResourcePacks());
+        SPECIAL_ACTIONS.put("lang", () -> {
+            try {
+                Minecraft.getInstance().reloadResourcePacks().get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public static User getUser() {

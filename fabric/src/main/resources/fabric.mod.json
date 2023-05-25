@@ -5,8 +5,12 @@
 
   "name": "CloudSettings",
   "description": "A simple Mod to sync your Minecraft settings between Minecraft Modpacks",
-  "authors": [],
-  "contact": {},
+  "authors": ["MrProfessor"],
+  "contact": {
+    "homepage": "https://cloudsettings.blutmondgilde.de/",
+    "issues": "https://github.com/Blutmond-Team/CloudSettings-Mod/issues",
+    "sources": "https://github.com/Blutmond-Team/CloudSettings-Mod"
+  },
 
   "license": "MIT",
   "icon": "icon.png",
