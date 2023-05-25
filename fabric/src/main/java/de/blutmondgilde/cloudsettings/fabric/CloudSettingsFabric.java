@@ -22,8 +22,6 @@ public class CloudSettingsFabric implements ClientModInitializer, IPlatformHandl
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             if (screen instanceof TitleScreen) {
                 CloudSettings.titleScreenOpened();
-            } else {
-                LOGGER.info("Screen: {}", screen.getClass());
             }
         });
     }
