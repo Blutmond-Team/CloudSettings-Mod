@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "cloudsettings",
+  "version": "${version}",
+
+  "name": "CloudSettings",
+  "description": "A simple Mod to sync your Minecraft settings between Minecraft Modpacks",
+  "authors": ["MrProfessor"],
+  "contact": {
+    "homepage": "https://cloudsettings.blutmondgilde.de/",
+    "issues": "https://github.com/Blutmond-Team/CloudSettings-Mod/issues",
+    "sources": "https://github.com/Blutmond-Team/CloudSettings-Mod"
+  },
+
+  "license": "MIT",
+  "icon": "icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "de.blutmondgilde.cloudsettings.fabric.CloudSettingsFabric"
+    ]
+  },
+  "mixins": [
+    "CloudSettings.mixins.json",
+    "CloudSettings-common.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": ">=1.18"
+  }
+}

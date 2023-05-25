@@ -1,0 +1,117 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+configurations {
+    common
+    shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    // Remove the next line if you don't want to depend on the API
+    modApi "me.shedaniel:architectury-fabric:${rootProject.architectury_version}"
+
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier.set("dev-shadow")
+}
+
+remapJar {
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier.set("fabric")
+}
+
+jar {
+    archiveClassifier.set("dev")
+}
+
+sourcesJar {
+    def commonSources = project(":common").sourcesJar
+    dependsOn commonSources
+    from commonSources.archiveFile.map { zipTree(it) }
+}
+
+components.java {
+    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+        skip()
+    }
+}
+
+publishing {
+    publications {
+        mavenFabric(MavenPublication) {
+            artifactId = rootProject.archives_base_name + "-" + project.name
+            from components.java
+        }
+    }
+
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+    repositories {
+        // Add repositories to publish to here.
+    }
+}
+
+tasks.register('copyResult', Copy) {
+    from "${project.getProjectDir().toString()}/build/libs/${archivesBaseName}-${version}-fabric.jar"
+    into "${rootProject.getProjectDir().toString()}/build/libs/"
+}
+build.finalizedBy(copyResult);
+
+unifiedPublishing {
+    project {
+        displayName = "${minecraft_version}-${project.version}-fabric"
+        gameLoaders = ['fabric']
+        gameVersions = [minecraft_version, "1.19.1", "1.19.2", "1.19.3", "1.19.4"]
+        version = version
+        changelog = file("${rootProject.rootDir.path}/Changelog.md").text
+        releaseType = release_type
+        mainPublication tasks.remapJar
+
+        relations {
+            depends {
+                curseforge = "fabric-api"
+                modrinth = "P7dR8mSH"
+            }
+        }
+
+        var CURSE_API_KEY = project.findProperty("curseforge_apikey") ?: System.getenv("CF_API_KEY")
+        if (CURSE_API_KEY != null) {
+            curseforge {
+                token = CURSE_API_KEY
+                id = '622165'
+                gameVersions.addAll("Java 17")
+            }
+        }
+
+        var MODRINTH_TOKEN = project.findProperty("modrinth_apikey") ?: System.getenv("MODRINTH_TOKEN")
+        if (MODRINTH_TOKEN != null) {
+            modrinth {
+                token = MODRINTH_TOKEN
+                id = 'nnu4dJj4'
+            }
+        }
+    }
+}
