@@ -79,3 +79,39 @@ tasks.register('copyResult', Copy) {
     into "${rootProject.getProjectDir().toString()}/build/libs/"
 }
 build.finalizedBy(copyResult);
+
+unifiedPublishing {
+    project {
+        displayName = "${minecraft_version}-${project.version}-fabric"
+        gameLoaders = ['fabric']
+        gameVersions = [minecraft_version]
+        version = version
+        changelog = file("${rootProject.rootDir.path}/Changelog.md").text
+        releaseType = release_type
+        mainPublication tasks.remapJar
+
+        relations {
+            depends {
+                curseforge = "fabric-api"
+                modrinth = "P7dR8mSH"
+            }
+        }
+
+        var CURSE_API_KEY = project.findProperty("curseforge_apikey") ?: System.getenv("CF_API_KEY")
+        if (CURSE_API_KEY != null) {
+            curseforge {
+                token = CURSE_API_KEY
+                id = '622165'
+                gameVersions.addAll("Java 8", "Java 11")
+            }
+        }
+
+        var MODRINTH_TOKEN = project.findProperty("modrinth_apikey") ?: System.getenv("MODRINTH_TOKEN")
+        if (MODRINTH_TOKEN != null) {
+            modrinth {
+                token = MODRINTH_TOKEN
+                id = 'nnu4dJj4'
+            }
+        }
+    }
+}
