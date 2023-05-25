@@ -13,14 +13,44 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class CloudSettingsAPI {
     private static final Gson GSON = new Gson();
     private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
-    private static final ExecutorService executor = CloudSettings.getExecutor();
+    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private static final String baseUrl = "http://localhost:3000/api";
+    private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
+        Collection<String> settings = CloudSettings.getPendingChanges().values();
+        if (settings.size() == 0) {
+            CloudSettings.getPlatformHandler().getLogger().info("Skipping sync due to no changes.");
+            return;
+        }
+
+        HttpPost request = post("/storage/options");
+        try {
+            StringEntity body = new StringEntity(GSON.toJson(new OptionsResponse(settings.toArray(new String[settings.size()]))));
+            request.setEntity(body);
+            try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    CloudSettings.getPlatformHandler()
+                            .getLogger()
+                            .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
+                                    response.getStatusLine().getStatusCode(),
+                                    response.getStatusLine().getReasonPhrase());
+                }
+            }
+            CloudSettings.getPlatformHandler().getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
+            CloudSettings.getPendingChanges().clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }, 5, 5, TimeUnit.SECONDS);
 
     public static CompletableFuture<String[]> getStoredOptions() {
         CompletableFuture<String[]> future = new CompletableFuture<>();
@@ -45,31 +75,6 @@ public class CloudSettingsAPI {
         });
 
         return future;
-    }
-
-    public static void storeSettings(String[] settings) {
-        if (settings.length == 0) {
-            CloudSettings.getPlatformHandler().getLogger().info("Skipping sync due to no changes.");
-            return;
-        }
-        executor.submit(() -> {
-            HttpPost request = post("/storage/options");
-            try {
-                StringEntity body = new StringEntity(GSON.toJson(new OptionsResponse(settings)));
-                request.setEntity(body);
-                try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-                    if (response.getStatusLine().getStatusCode() != 200) {
-                        CloudSettings.getPlatformHandler()
-                                .getLogger()
-                                .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
-                                        response.getStatusLine().getStatusCode(),
-                                        response.getStatusLine().getReasonPhrase());
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
     }
 
     private static HttpGet get(final String url) {

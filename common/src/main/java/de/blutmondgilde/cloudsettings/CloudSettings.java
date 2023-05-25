@@ -1,5 +1,6 @@
 package de.blutmondgilde.cloudsettings;
 
+import com.google.common.collect.Sets;
 import de.blutmondgilde.cloudsettings.api.CloudSettingsAPI;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +13,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -27,6 +27,8 @@ public class CloudSettings {
     @Setter(onMethod_ = {@Synchronized})
     private static boolean initialized = false;
     private static final ConcurrentHashMap<String, String> CACHE = new ConcurrentHashMap<>();
+    @Getter
+    private static final ConcurrentHashMap<String, String> PendingChanges = new ConcurrentHashMap<>();
     @Getter
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -43,22 +45,44 @@ public class CloudSettings {
         Minecraft.getInstance().execute(() -> {
             platformHandler.getLogger().info("Requesting User Data");
             try {
-                String[] options = CloudSettingsAPI.getStoredOptions().get();
-                platformHandler.getLogger().info("Got {} options from Cloud", options.length);
-                if (options.length != 0) {
-                    if (platformHandler.getOptionsFile().getParentFile().mkdirs()) {
-                        platformHandler.getLogger().info("Created Game dir");
+                Set<String> options = Sets.newHashSet(CloudSettingsAPI.getStoredOptions().get());
+                platformHandler.getLogger().info("Got {} options from Cloud", options.size());
+                if (options.size() != 0) {
+                    if (!platformHandler.getOptionsFile().exists()) {
+                        platformHandler.getLogger().info("Save vanilla config file");
+                        Minecraft.getInstance().options.save();
                     }
 
                     try {
-                        FileUtils.write(platformHandler.getOptionsFile(), String.join("\n", options), StandardCharsets.UTF_8, false);
+                        BufferedReader reader = new BufferedReader(new FileReader(platformHandler.getOptionsFile()));
+                        StringBuilder optionLines = new StringBuilder();
+
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            String optionId = line.substring(0, line.indexOf(':'));
+                            String newOptionLine = options.stream()
+                                    .filter(s -> s.startsWith(optionId))
+                                    .findFirst()
+                                    .orElse(line);
+                            if (options.remove(newOptionLine)) {
+                                platformHandler.getLogger().info("Applied {} with value {} to options", optionId, newOptionLine);
+                            }
+
+                            optionLines.append(newOptionLine).append('\n');
+                        }
+                        reader.close();
+
+                        for (String cloudOption : options) {
+                            optionLines.append(cloudOption).append('\n');
+                        }
+
+                        FileUtils.write(platformHandler.getOptionsFile(), optionLines.toString(), StandardCharsets.UTF_8, false);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
                     // Reload Options
                     Minecraft.getInstance().options.load();
-                    platformHandler.getLogger().info("{} options loaded from cloud.", options.length);
                 }
 
                 setInitialized(true);
@@ -76,13 +100,12 @@ public class CloudSettings {
             return;
         }
 
-        Set<String> changes = new HashSet<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(platformHandler.getOptionsFile()))) {
             String line = reader.readLine();
             while (line != null) {
                 String id = line.substring(0, line.indexOf(':'));
                 if (CACHE.containsKey(id) && !CACHE.get(id).equalsIgnoreCase(line)) {
-                    changes.add(line);
+                    PendingChanges.put(id,line);
                     platformHandler.getLogger().info("Enqueue sync of {} with value {}", id, line);
                 }
                 CACHE.put(id, line);
@@ -92,8 +115,6 @@ public class CloudSettings {
             e.printStackTrace();
         }
 
-        platformHandler.getLogger().info("Got {} changes to sync", changes.size());
-        String[] changedOptions = changes.stream().toArray(String[]::new);
-        CloudSettingsAPI.storeSettings(changedOptions);
+        platformHandler.getLogger().info("Got {} changes to sync", PendingChanges.size());
     }
 }
