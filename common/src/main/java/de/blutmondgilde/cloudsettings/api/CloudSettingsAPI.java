@@ -29,7 +29,7 @@ public class CloudSettingsAPI {
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
         Collection<String> settings = CloudSettings.getPendingChanges().values();
         if (settings.size() == 0) {
-            CloudSettings.getPlatformHandler().getLogger().info("Skipping sync due to no changes.");
+            CloudSettings.getPlatformHandler().getLogger().debug("Skipping sync due to no changes.");
             return;
         }
 
