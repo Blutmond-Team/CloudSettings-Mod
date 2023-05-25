@@ -11,8 +11,12 @@
   "license": "MIT",
   "icon": "icon.png",
 
-  "environment": "*",
-  "entrypoints": {},
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "de.blutmondgilde.cloudsettings.fabric.CloudSettingsFabric"
+    ]
+  },
   "mixins": [
     "CloudSettings.mixins.json",
     "CloudSettings-common.mixins.json"
