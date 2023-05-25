@@ -24,7 +24,8 @@ public class CloudSettingsAPI {
     private static final Gson GSON = new Gson();
     private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private static final String baseUrl = "http://localhost:3000/api";
+    //private static final String baseUrl = "http://localhost:3000/api";
+    private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api";
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
         Collection<String> settings = CloudSettings.getPendingChanges().values();
         if (settings.size() == 0) {
