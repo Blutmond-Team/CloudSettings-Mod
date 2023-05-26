@@ -40,7 +40,7 @@ public class CloudSettings {
         return Minecraft.getInstance().getUser();
     }
 
-    public static void titleScreenOpened() {
+    public static void beforeTitleScreen() {
         if (isInitialized()) return;
         Minecraft.getInstance().execute(() -> {
             platformHandler.getLogger().info("Requesting User Data");
@@ -51,6 +51,11 @@ public class CloudSettings {
                     if (!platformHandler.getOptionsFile().exists()) {
                         platformHandler.getLogger().debug("Save vanilla config file");
                         Minecraft.getInstance().options.save();
+                    }
+
+                    if (!platformHandler.getOptionsFile().exists()){
+                        platformHandler.getLogger().debug("Vanilla config file still doesn't exist?!");
+                        return;
                     }
 
                     try {
