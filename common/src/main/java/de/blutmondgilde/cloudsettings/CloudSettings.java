@@ -53,6 +53,11 @@ public class CloudSettings {
                         Minecraft.getInstance().options.save();
                     }
 
+                    if (!platformHandler.getOptionsFile().exists()){
+                        platformHandler.getLogger().debug("Vanilla config file still doesn't exist?!");
+                        return;
+                    }
+
                     try {
                         BufferedReader reader = new BufferedReader(new FileReader(platformHandler.getOptionsFile()));
                         StringBuilder optionLines = new StringBuilder();

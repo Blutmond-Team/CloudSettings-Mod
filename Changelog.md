@@ -1,3 +1,8 @@
+# 2.0.0.1 Compatibility improvements
+
+- Remove Title Screen Listener to initialize cloud settings
+- Use mixin into Minecraft to initialize cloud settings
+
 # 2.0.0.0 Another Rewrite?
 
 It's been 6 Months since the last rewrite which brought us a suspicious looking login screen and a login cert file and
