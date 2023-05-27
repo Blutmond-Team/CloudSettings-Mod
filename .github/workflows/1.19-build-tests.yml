@@ -1,4 +1,4 @@
-name: Java CI with Gradle
+name: 1.19.x Build Tests
 
 on:
   push:
