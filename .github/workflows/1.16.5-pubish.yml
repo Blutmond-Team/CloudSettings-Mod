@@ -1,4 +1,4 @@
-name: 1.16.5 Build Tests
+name: 1.16.5 Publish Tasks
 
 on:
   workflow_dispatch:
