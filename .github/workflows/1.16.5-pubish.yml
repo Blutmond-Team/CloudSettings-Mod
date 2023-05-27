@@ -30,17 +30,10 @@ jobs:
           distribution: 'temurin'
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-      - name: Build with Gradle
+      - name: Upload with Gradle
         uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
-          arguments: build
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
-        with:
-          name: Build Files
-          path: |
-            build/libs/CloudSettings-1.16.5-*.*.*.*-fabric.jar
-            build/libs/CloudSettings-1.16.5-*.*.*.*-forge.jar
+          arguments: modrinthnnu4dJj4
   publish-to-curseforge:
     runs-on: ubuntu-latest
     if: github.event.inputs.platform == 'curseforge' || github.event.inputs.platform == 'all'
@@ -55,7 +48,7 @@ jobs:
           distribution: 'temurin'
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-      - name: Build with Gradle
+      - name: Upload with Gradle
         uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
-          arguments: build
+          arguments: curseforge622165
