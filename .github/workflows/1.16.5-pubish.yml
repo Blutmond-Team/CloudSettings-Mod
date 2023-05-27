@@ -39,8 +39,8 @@ jobs:
         with:
           name: Build Files
           path: |
-            /build/libs/CloudSettings-1.16.5-*.*.*.*-fabric.jar
-            /build/libs/CloudSettings-1.16.5-*.*.*.*-forge.jar
+            build/libs/CloudSettings-1.16.5-*.*.*.*-fabric.jar
+            build/libs/CloudSettings-1.16.5-*.*.*.*-forge.jar
   publish-to-curseforge:
     runs-on: ubuntu-latest
     if: github.event.inputs.platform == 'curseforge' || github.event.inputs.platform == 'all'
