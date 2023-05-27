@@ -7,6 +7,10 @@ on:
         description: 'Target Platform to publish. Values: all, modrinth, curseforge'
         default: 'all'
         required: true
+        options:
+          - all
+          - modrinth
+          - curseforge
 
 permissions:
   contents: read
