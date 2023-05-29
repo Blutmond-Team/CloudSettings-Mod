@@ -89,7 +89,7 @@ unifiedPublishing {
         displayName = "${minecraft_version}-${project.version}-forge"
         gameLoaders = ['forge']
         gameVersions = [minecraft_version, "1.18.1", "1.18.2"]
-        version = version
+        version = rootProject.version
         changelog = file("${rootProject.rootDir.path}/Changelog.md").text
         releaseType = release_type
         mainPublication tasks.remapJar
