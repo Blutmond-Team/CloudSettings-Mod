@@ -25,7 +25,7 @@ public class CloudSettings {
     private static IPlatformHandler platformHandler;
     @Getter(onMethod_ = {@Synchronized})
     @Setter(onMethod_ = {@Synchronized})
-    private static boolean initialized = false;
+    private static CloudSettingsStatus status = CloudSettingsStatus.BEFORE_START;
     private static final ConcurrentHashMap<String, String> CACHE = new ConcurrentHashMap<>();
     @Getter
     private static final ConcurrentHashMap<String, String> PendingChanges = new ConcurrentHashMap<>();
@@ -41,7 +41,7 @@ public class CloudSettings {
     }
 
     public static void beforeTitleScreen() {
-        if (isInitialized()) return;
+        if (getStatus().isInitialized()) return;
         Minecraft.getInstance().execute(() -> {
             platformHandler.getLogger().info("Requesting User Data");
             try {
@@ -53,7 +53,7 @@ public class CloudSettings {
                         Minecraft.getInstance().options.save();
                     }
 
-                    if (!platformHandler.getOptionsFile().exists()){
+                    if (!platformHandler.getOptionsFile().exists()) {
                         platformHandler.getLogger().debug("Vanilla config file still doesn't exist?!");
                         return;
                     }
@@ -95,19 +95,27 @@ public class CloudSettings {
                     // Reload Options
                     Minecraft.getInstance().options.load();
                     platformHandler.getLogger().debug("Loaded option file.");
-                    setInitialized(true);
+                    setStatus(CloudSettingsStatus.INITIALIZED);
                     // Cache settings
                     checkForChanges();
+                } else {
+                    // Init new user
+                    setStatus(CloudSettingsStatus.INITIALIZED);
                 }
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
+                setStatus(CloudSettingsStatus.FAILED);
             }
         });
     }
 
     public static void checkForChanges() {
-        if (!isInitialized()) {
+        if (!getStatus().isInitialized()) {
             platformHandler.getLogger().debug("Skipping change check due to uninitialized base handler");
+            return;
+        }
+        if (getStatus().isErrored()) {
+            platformHandler.getLogger().info("CloudSettings is disabled due to load up errors.");
             return;
         }
 
