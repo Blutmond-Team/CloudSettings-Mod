@@ -1,3 +1,7 @@
+# 2.0.0.2 Sync Fix
+
+- fix handler won't get initialized when no data exists
+
 # 2.0.0.1 Compatibility improvements
 
 - Remove Title Screen Listener to initialize cloud settings
