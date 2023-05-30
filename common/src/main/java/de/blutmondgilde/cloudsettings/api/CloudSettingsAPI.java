@@ -47,7 +47,7 @@ public class CloudSettingsAPI {
     //private static final String baseUrl = "http://localhost:3000/api";
     private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api";
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
-        if (!CloudSettings.isInitialized()) return;
+        if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
         if (settings.size() == 0) {
             CloudSettings.getPlatformHandler().getLogger().debug("Skipping sync due to no changes.");
