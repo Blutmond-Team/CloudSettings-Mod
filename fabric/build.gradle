@@ -83,7 +83,7 @@ build.finalizedBy(copyResult);
 unifiedPublishing {
     project {
         displayName = "${minecraft_version}-${project.version}-fabric"
-        gameLoaders = ['fabric']
+        gameLoaders = ['fabric', 'quilt']
         gameVersions = [minecraft_version]
         version = rootProject.version
         changelog = file("${rootProject.rootDir.path}/Changelog.md").text
