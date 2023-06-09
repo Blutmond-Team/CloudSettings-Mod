@@ -1,3 +1,8 @@
+# 2.0.0.3 Gui Scale Fix
+
+- fix a small bug where the loaded gui scale won't get applied to the minecraft window
+- add shutdown hook to sync pending changes when minecraft gets closed
+
 # 2.0.0.2 Sync Fix
 
 - fix handler won't get initialized when no data exists

@@ -53,7 +53,7 @@ public class CloudSettings {
                         Minecraft.getInstance().options.save();
                     }
 
-                    if (!platformHandler.getOptionsFile().exists()){
+                    if (!platformHandler.getOptionsFile().exists()) {
                         platformHandler.getLogger().debug("Vanilla config file still doesn't exist?!");
                         return;
                     }
@@ -93,7 +93,10 @@ public class CloudSettings {
 
                     platformHandler.getLogger().debug("Loading newly written option file");
                     // Reload Options
-                    Minecraft.getInstance().options.load();
+                    Minecraft minecraft = Minecraft.getInstance();
+                    minecraft.options.load();
+                    minecraft.resizeDisplay();
+
                     platformHandler.getLogger().debug("Loaded option file.");
                     setStatus(CloudSettingsStatus.INITIALIZED);
                     // Cache settings
