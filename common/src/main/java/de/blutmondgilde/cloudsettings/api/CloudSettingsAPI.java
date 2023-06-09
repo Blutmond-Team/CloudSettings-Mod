@@ -122,4 +122,34 @@ public class CloudSettingsAPI {
         String responseBody = EntityUtils.toString(entity);
         return GSON.fromJson(responseBody, pojoClass);
     }
+
+    public static void shutdown() {
+        executor.shutdownNow();
+
+        if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
+        Collection<String> settings = CloudSettings.getPendingChanges().values();
+        if (settings.size() == 0) {
+            CloudSettings.getPlatformHandler().getLogger().debug("Skipping sync due to no changes.");
+            return;
+        }
+
+        HttpPost request = post("/storage/options");
+        try {
+            StringEntity body = new StringEntity(GSON.toJson(new OptionsResponse(settings.toArray(new String[settings.size()]))));
+            request.setEntity(body);
+            try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    CloudSettings.getPlatformHandler()
+                            .getLogger()
+                            .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
+                                    response.getStatusLine().getStatusCode(),
+                                    response.getStatusLine().getReasonPhrase());
+                }
+            }
+            CloudSettings.getPlatformHandler().getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
+            CloudSettings.getPendingChanges().clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

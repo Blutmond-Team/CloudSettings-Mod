@@ -1,3 +1,8 @@
+# 2.0.0.3 Gui Scale Fix
+
+- fix a small bug where the loaded gui scale won't get applied to the minecraft window
+- add shutdown hook to sync pending changes when minecraft gets closed
+
 # 2.0.0.2 Sync Fix
 
 - fix handler won't get initialized when no data exists
@@ -10,7 +15,7 @@
 # 2.0.0.0 Another Rewrite?
 
 It's been 6 Months since the last rewrite which brought us a suspicious looking login screen and a login cert file and
-I instantly regretted making those.
+i instantly regretted making those.
 
 That's why I removed them completely and switched to a new authorization concept
 which uses the Microsoft Access Token to identify a user using the MinecraftServices.com API. This is basically the same
