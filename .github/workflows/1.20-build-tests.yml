@@ -1,0 +1,39 @@
+name: 1.20.X Build Tests
+
+on:
+  push:
+    branches: [ "1.20" ]
+  pull_request:
+    branches: [ "1.20" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-with-java-8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: '1.20'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
+        with:
+          arguments: build
+      - name: 'Upload Forge Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Forge Mod
+          path: build/libs/CloudSettings-1.20.X-*.*.*.*-forge.jar
+      - name: 'Upload Fabric Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Fabric Mod
+          path: build/libs/CloudSettings-1.20.X-*.*.*.*-fabric.jar
