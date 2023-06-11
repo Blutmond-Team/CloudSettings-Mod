@@ -1,3 +1,7 @@
+# 2.0.0.4 Earlier injection point
+
+- initialize cloud settings on the first option load up before minecraft gets fully initialized.
+
 # 2.0.0.3 Gui Scale Fix
 
 - fix a small bug where the loaded gui scale won't get applied to the minecraft window
