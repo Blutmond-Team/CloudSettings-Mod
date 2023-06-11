@@ -50,7 +50,7 @@ public class CloudSettingsAPI {
         if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
         if (settings.size() == 0) {
-            CloudSettings.getPlatformHandler().getLogger().debug("Skipping sync due to no changes.");
+            CloudSettings.getLogger().debug("Skipping sync due to no changes.");
             return;
         }
 
@@ -60,14 +60,13 @@ public class CloudSettingsAPI {
             request.setEntity(body);
             try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
-                    CloudSettings.getPlatformHandler()
-                            .getLogger()
+                    CloudSettings.getLogger()
                             .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
                                     response.getStatusLine().getStatusCode(),
                                     response.getStatusLine().getReasonPhrase());
                 }
             }
-            CloudSettings.getPlatformHandler().getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
+            CloudSettings.getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
             CloudSettings.getPendingChanges().clear();
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,8 +83,7 @@ public class CloudSettingsAPI {
                     OptionsResponse optionsResponse = resolveJsonBody(response, OptionsResponse.class);
                     future.complete(optionsResponse.getOptions());
                 } else {
-                    CloudSettings.getPlatformHandler()
-                            .getLogger()
+                    CloudSettings.getLogger()
                             .error("Error on loading Options from Cloud.\nStatus Code: {}\nStatus Text: {}",
                                     response.getStatusLine().getStatusCode(),
                                     response.getStatusLine().getReasonPhrase());
@@ -104,7 +102,7 @@ public class CloudSettingsAPI {
         get.addHeader(HttpHeaders.AUTHORIZATION, CloudSettings.getUser().getAccessToken());
         get.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         get.addHeader(HttpHeaders.ACCEPT, "application/json");
-        get.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.16.5 %s)", CloudSettings.getPlatformHandler().getModVersion()));
+        get.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.20 %s)", CloudSettings.MOD_VERSION));
         return get;
     }
 
@@ -113,7 +111,7 @@ public class CloudSettingsAPI {
         post.addHeader(HttpHeaders.AUTHORIZATION, CloudSettings.getUser().getAccessToken());
         post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         post.addHeader(HttpHeaders.ACCEPT, "application/json");
-        post.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.16.5 %s)", CloudSettings.getPlatformHandler().getModVersion()));
+        post.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.20 %s)", CloudSettings.MOD_VERSION));
         return post;
     }
 
@@ -129,7 +127,7 @@ public class CloudSettingsAPI {
         if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
         if (settings.size() == 0) {
-            CloudSettings.getPlatformHandler().getLogger().debug("Skipping sync due to no changes.");
+            CloudSettings.getLogger().debug("Skipping sync due to no changes.");
             return;
         }
 
@@ -139,14 +137,13 @@ public class CloudSettingsAPI {
             request.setEntity(body);
             try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
-                    CloudSettings.getPlatformHandler()
-                            .getLogger()
+                    CloudSettings.getLogger()
                             .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
                                     response.getStatusLine().getStatusCode(),
                                     response.getStatusLine().getReasonPhrase());
                 }
             }
-            CloudSettings.getPlatformHandler().getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
+            CloudSettings.getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
             CloudSettings.getPendingChanges().clear();
         } catch (IOException e) {
             e.printStackTrace();

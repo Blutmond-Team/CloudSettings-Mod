@@ -4,15 +4,30 @@ import de.blutmondgilde.cloudsettings.CloudSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.io.File;
+
 @Mixin(Options.class)
-public class MixinOptions {
+public abstract class MixinOptions {
+
+    @Shadow
+    public abstract File getFile();
+
+    @Shadow
+    protected Minecraft minecraft;
+
+    @Inject(method = "load", at = @At("HEAD"))
+    public void onLoad(CallbackInfo ci) {
+        CloudSettings.beforeOptionsLoaded(minecraft, getFile(), (Options) (Object) this);
+    }
+
     @Inject(method = "save()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;broadcastOptions()V"))
     public void onSave(CallbackInfo ci) {
-        CloudSettings.getPlatformHandler().getLogger().info("Detected options saving. Checking for updates...");
-        Minecraft.getInstance().execute(CloudSettings::checkForChanges);
+        CloudSettings.getLogger().info("Detected options saving. Checking for updates...");
+        Minecraft.getInstance().execute(() -> CloudSettings.checkForChanges(getFile()));
     }
 }
