@@ -1,3 +1,7 @@
+# 2.0.0.4 Earlier injection point
+
+- initialize cloud settings on the first option load up before minecraft gets fully initialized.
+
 # 2.0.0.3 Gui Scale Fix
 
 - fix a small bug where the loaded gui scale won't get applied to the minecraft window
@@ -15,7 +19,7 @@
 # 2.0.0.0 Another Rewrite?
 
 It's been 6 Months since the last rewrite which brought us a suspicious looking login screen and a login cert file and
-i instantly regretted making those. 
+i instantly regretted making those.
 
 That's why I removed them completely and switched to a new authorization concept
 which uses the Microsoft Access Token to identify a user using the MinecraftServices.com API. This is basically the same
