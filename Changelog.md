@@ -1,3 +1,8 @@
+# 2.0.0.5 No more Access Token
+
+- CloudSettings no longer uses your Minecraft Access Token to authenticate. The whole server login process is used
+  instead
+
 # 2.0.0.4 Earlier injection point
 
 - initialize cloud settings on the first option load up before minecraft gets fully initialized.
