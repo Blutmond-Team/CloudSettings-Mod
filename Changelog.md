@@ -1,3 +1,7 @@
+# 2.0.0.6 Auth Error Fix
+
+- Fix an error when storing data with 2.0.0.5
+
 # 2.0.0.5 No more Access Token
 
 - CloudSettings no longer uses your Minecraft Access Token to authenticate. The whole server login process is used
