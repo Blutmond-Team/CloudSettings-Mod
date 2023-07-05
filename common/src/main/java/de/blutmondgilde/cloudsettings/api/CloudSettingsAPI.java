@@ -124,7 +124,7 @@ public class CloudSettingsAPI {
     private static HttpPost post(final String url) {
         if (checkLogin()) {
             HttpPost post = new HttpPost(baseUrl + url);
-            post.addHeader(HttpHeaders.AUTHORIZATION, CloudSettings.getUser().getAccessToken());
+            post.addHeader(HttpHeaders.AUTHORIZATION, SESSION_TOKEN);
             post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
             post.addHeader(HttpHeaders.ACCEPT, "application/json");
             post.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.20 %s)", CloudSettings.MOD_VERSION));
