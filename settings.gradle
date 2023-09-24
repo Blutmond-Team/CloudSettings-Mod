@@ -11,4 +11,4 @@ include("common")
 include("fabric")
 include("forge")
 
-rootProject.name="Mod_1.20"
+rootProject.name="Mod_1.20.2"

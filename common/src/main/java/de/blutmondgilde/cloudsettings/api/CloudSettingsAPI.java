@@ -1,7 +1,6 @@
 package de.blutmondgilde.cloudsettings.api;
 
 import com.google.gson.Gson;
-import com.mojang.authlib.exceptions.AuthenticationException;
 import de.blutmondgilde.cloudsettings.CloudSettings;
 import de.blutmondgilde.cloudsettings.api.pojo.BackendSessionTokenRequest;
 import de.blutmondgilde.cloudsettings.api.pojo.OptionsResponse;
@@ -51,8 +50,8 @@ public class CloudSettingsAPI {
     }
 
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    //private static final String baseUrl = "http://localhost:3000/api/v1";
-    private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api/v1";
+    private static final String baseUrl = "http://localhost:3000/api/v1";
+    //private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api/v1";
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
         if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
@@ -136,6 +135,7 @@ public class CloudSettingsAPI {
     private static <T> T resolveJsonBody(CloseableHttpResponse response, Class<T> pojoClass) throws IOException {
         HttpEntity entity = response.getEntity();
         String responseBody = EntityUtils.toString(entity);
+        CloudSettings.getLogger().debug("Resolving response to {}\n{}", pojoClass.getName(), responseBody);
         return GSON.fromJson(responseBody, pojoClass);
     }
 
@@ -176,22 +176,23 @@ public class CloudSettingsAPI {
         // Get Server Id from backend
         try {
             HttpPost requestServerId = new HttpPost(baseUrl + "/auth/serverId");
-            StringEntity body = new StringEntity(GSON.toJson(new ServerIdRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getUuid())));
+            StringEntity body = new StringEntity(GSON.toJson(new ServerIdRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getProfileId().toString())));
             requestServerId.setEntity(body);
 
             CloudSettings.getLogger().info("Requesting Server Id");
             CloseableHttpResponse responseServerId = HTTP_CLIENT.execute(requestServerId);
             CloudSettings.getLogger().info("Requested Server Id");
             ServerIdResponse serverIdResponse = resolveJsonBody(responseServerId, ServerIdResponse.class);
-            CloudSettings.getLogger().info("Resolved Server Id");
+            CloudSettings.getLogger().info("Resolved Server Id: {}", serverIdResponse);
+            if (serverIdResponse == null) throw new IllegalStateException("Invalid Response from Server.");
             responseServerId.close();
             // Tell Mojang to log us in
             CloudSettings.getLogger().info("Login in into Mojang Session Server");
-            Minecraft.getInstance().getMinecraftSessionService().joinServer(CloudSettings.getUser().getGameProfile(), CloudSettings.getUser().getAccessToken(), serverIdResponse.getServerId());
+            Minecraft.getInstance().getMinecraftSessionService().joinServer(CloudSettings.getUser().getProfileId(), CloudSettings.getUser().getAccessToken(), serverIdResponse.getServerId());
             CloudSettings.getLogger().info("Logged in into Mojang Session Server");
             // Tell Backend that we're logged in
             HttpPost requestSessionToken = new HttpPost(baseUrl + "/auth/notify");
-            requestSessionToken.setEntity(new StringEntity(GSON.toJson(new BackendSessionTokenRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getUuid(), serverIdResponse.getServerId()))));
+            requestSessionToken.setEntity(new StringEntity(GSON.toJson(new BackendSessionTokenRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getProfileId().toString(), serverIdResponse.getServerId()))));
             CloudSettings.getLogger().info("Requesting Session Token");
             CloseableHttpResponse responseSessionToken = HTTP_CLIENT.execute(requestSessionToken);
             CloudSettings.getLogger().info("Requested Session Token");
@@ -202,7 +203,7 @@ public class CloudSettingsAPI {
             CloudSettings.getLogger().info("Login Successful");
             SESSION_TOKEN = sessionTokenResponse.getToken();
             return true;
-        } catch (IOException | AuthenticationException e) {
+        } catch (Exception e) {
             CloudSettings.getLogger().error("Error on Login", e);
         }
 
