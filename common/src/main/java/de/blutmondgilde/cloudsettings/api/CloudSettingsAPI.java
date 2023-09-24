@@ -50,8 +50,8 @@ public class CloudSettingsAPI {
     }
 
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private static final String baseUrl = "http://localhost:3000/api/v1";
-    //private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api/v1";
+    //private static final String baseUrl = "http://localhost:3000/api/v1";
+    private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api/v1";
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
         if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
