@@ -1,3 +1,7 @@
+plugins {
+    id "com.github.gmazzo.buildconfig" version "4.1.2"
+}
+
 dependencies {
     // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
     // Do NOT use other classes from fabric loader
@@ -5,7 +9,7 @@ dependencies {
 }
 
 architectury {
-    common()
+    common("fabric", "forge", "neoforge")
 }
 
 publishing {
@@ -20,4 +24,12 @@ publishing {
     repositories {
         // Add repositories to publish to here.
     }
+}
+
+buildConfig {
+    className("BuildConstants")
+    packageName("de.blutmondgilde.cloudsettings")
+    useJavaOutput()
+    buildConfigField("String", "API_BASE_URL", '"https://cloudsettings.blutmondgilde.de/api/v1"')
+    buildConfigField("String", "HTTP_USER_AGENT", "\"cloud settings mod (${rootProject.minecraft_version} ${rootProject.mod_version})\"")
 }
