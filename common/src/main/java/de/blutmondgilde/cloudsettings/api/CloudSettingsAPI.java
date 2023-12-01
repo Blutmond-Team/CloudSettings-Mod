@@ -2,6 +2,7 @@ package de.blutmondgilde.cloudsettings.api;
 
 import com.google.gson.Gson;
 import com.mojang.authlib.exceptions.AuthenticationException;
+import de.blutmondgilde.cloudsettings.BuildConstants;
 import de.blutmondgilde.cloudsettings.CloudSettings;
 import de.blutmondgilde.cloudsettings.api.pojo.BackendSessionTokenRequest;
 import de.blutmondgilde.cloudsettings.api.pojo.OptionsResponse;
@@ -51,8 +52,6 @@ public class CloudSettingsAPI {
     }
 
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    //private static final String baseUrl = "http://localhost:3000/api/v1";
-    private static final String baseUrl = "https://cloudsettings.blutmondgilde.de/api/v1";
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
         if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
@@ -110,11 +109,11 @@ public class CloudSettingsAPI {
 
     private static HttpGet get(final String url) {
         if (checkLogin()) {
-            HttpGet get = new HttpGet(baseUrl + url);
+            HttpGet get = new HttpGet(BuildConstants.API_BASE_URL + url);
             get.addHeader(HttpHeaders.AUTHORIZATION, SESSION_TOKEN);
             get.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
             get.addHeader(HttpHeaders.ACCEPT, "application/json");
-            get.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.20 %s)", CloudSettings.MOD_VERSION));
+            get.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
             return get;
         }
 
@@ -123,11 +122,11 @@ public class CloudSettingsAPI {
 
     private static HttpPost post(final String url) {
         if (checkLogin()) {
-            HttpPost post = new HttpPost(baseUrl + url);
+            HttpPost post = new HttpPost(BuildConstants.API_BASE_URL + url);
             post.addHeader(HttpHeaders.AUTHORIZATION, SESSION_TOKEN);
             post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
             post.addHeader(HttpHeaders.ACCEPT, "application/json");
-            post.addHeader(HttpHeaders.USER_AGENT, String.format("cloud settings mod (1.20 %s)", CloudSettings.MOD_VERSION));
+            post.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
             return post;
         }
         return null;
@@ -175,7 +174,8 @@ public class CloudSettingsAPI {
         CloudSettings.getLogger().info("Starting Login...");
         // Get Server Id from backend
         try {
-            HttpPost requestServerId = new HttpPost(baseUrl + "/auth/serverId");
+            HttpPost requestServerId = new HttpPost(BuildConstants.API_BASE_URL + "/auth/serverId");
+            requestServerId.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
             StringEntity body = new StringEntity(GSON.toJson(new ServerIdRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getUuid())));
             requestServerId.setEntity(body);
 
@@ -190,7 +190,8 @@ public class CloudSettingsAPI {
             Minecraft.getInstance().getMinecraftSessionService().joinServer(CloudSettings.getUser().getGameProfile(), CloudSettings.getUser().getAccessToken(), serverIdResponse.getServerId());
             CloudSettings.getLogger().info("Logged in into Mojang Session Server");
             // Tell Backend that we're logged in
-            HttpPost requestSessionToken = new HttpPost(baseUrl + "/auth/notify");
+            HttpPost requestSessionToken = new HttpPost(BuildConstants.API_BASE_URL + "/auth/notify");
+            requestSessionToken.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
             requestSessionToken.setEntity(new StringEntity(GSON.toJson(new BackendSessionTokenRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getUuid(), serverIdResponse.getServerId()))));
             CloudSettings.getLogger().info("Requesting Session Token");
             CloseableHttpResponse responseSessionToken = HTTP_CLIENT.execute(requestSessionToken);
