@@ -1,3 +1,7 @@
+# 2.0.0.7 Http Client adjustments
+
+- Dynamically construct http client header
+
 # 2.0.0.6 No Changes in this version
 
 # 2.0.0.5 No more Access Token
