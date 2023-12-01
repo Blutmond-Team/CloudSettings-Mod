@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 @Log4j2
 public class CloudSettings {
     public static final String MOD_ID = "cloudsettings";
-    public static final String MOD_VERSION = "2.0.0.5";
 
     @Getter
     private static IPlatformHandler platformHandler;

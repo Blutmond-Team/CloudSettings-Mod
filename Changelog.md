@@ -1,3 +1,7 @@
+# 2.0.0.7 Http Client adjustments
+
+- Dynamically construct http client header
+
 # 2.0.0.6 Auth Error Fix
 
 - Fix an error when storing data with 2.0.0.5
