@@ -99,7 +99,6 @@ unifiedPublishing {
             curseforge {
                 token = CURSE_API_KEY
                 id = '622165'
-                gameVersions.addAll("Java 17")
             }
         }
 

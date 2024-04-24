@@ -1,3 +1,7 @@
+# 2.0.0.8 Compatibility improvements for NeoForge
+
+- Add compatibility for NeoForge 1.20.5
+
 # 2.0.0.7 Http Client adjustments
 
 - Dynamically construct http client header
