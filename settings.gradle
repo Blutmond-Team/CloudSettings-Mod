@@ -13,4 +13,4 @@ include("fabric")
 include("forge")
 include("neoforge")
 
-rootProject.name="Mod_1.20.2"
+rootProject.name="Mod_1.20.6"
