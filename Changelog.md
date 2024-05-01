@@ -1,3 +1,7 @@
+# 2.0.0.9 Compatibility improvements for Forge
+
+- Add compatibility for Forge 1.16.6
+
 # 2.0.0.8 Compatibility improvements for NeoForge
 
 - Add compatibility for NeoForge 1.20.5
