@@ -10,7 +10,7 @@ pluginManagement {
 
 include("common")
 include("fabric")
-include("forge")
+//include("forge")
 include("neoforge")
 
-rootProject.name="Mod_1.20.6"
+rootProject.name="Mod_1.21"
