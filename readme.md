@@ -14,7 +14,8 @@ game.
 
 | Minecraft Version | Status                 |
 |-------------------|------------------------|
-| 1.21              | Active Development     |
+| 1.21.9 <= 1.21.x  | Active Development     |
+| 1.21.x <= 1.21.8  | Backports and Bugfixes |
 | 1.20.X            | Backports and Bugfixes |
 | 1.19.X            | Backports and Bugfixes |
 | 1.18.X            | Backports and Bugfixes |
