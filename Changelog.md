@@ -1,3 +1,8 @@
+# 2.0.0.10
+
+- Add compatibility for 1.21.9
+- Add compatibility for 1.21.10
+
 # 2.0.0.9 Compatibility improvements for Forge
 
 - Add compatibility for Forge 1.16.6
