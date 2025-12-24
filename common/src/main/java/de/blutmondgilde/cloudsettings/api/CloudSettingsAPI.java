@@ -188,7 +188,7 @@ public class CloudSettingsAPI {
             responseServerId.close();
             // Tell Mojang to log us in
             CloudSettings.getLogger().info("Login in into Mojang Session Server");
-            Minecraft.getInstance().getMinecraftSessionService().joinServer(CloudSettings.getUser().getProfileId(), CloudSettings.getUser().getAccessToken(), serverIdResponse.getServerId());
+            Minecraft.getInstance().services().sessionService().joinServer(CloudSettings.getUser().getProfileId(), CloudSettings.getUser().getAccessToken(), serverIdResponse.getServerId());
             CloudSettings.getLogger().info("Logged in into Mojang Session Server");
             // Tell Backend that we're logged in
             HttpPost requestSessionToken = new HttpPost(BuildConstants.API_BASE_URL + "/auth/notify");
