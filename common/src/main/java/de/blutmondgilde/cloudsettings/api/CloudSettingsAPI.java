@@ -1,5 +1,6 @@
 package de.blutmondgilde.cloudsettings.api;
 
+import com.google.common.net.HttpHeaders;
 import com.google.gson.Gson;
 import de.blutmondgilde.cloudsettings.BuildConstants;
 import de.blutmondgilde.cloudsettings.CloudSettings;
@@ -9,72 +10,49 @@ import de.blutmondgilde.cloudsettings.api.pojo.ServerIdRequest;
 import de.blutmondgilde.cloudsettings.api.pojo.ServerIdResponse;
 import de.blutmondgilde.cloudsettings.api.pojo.SessionTokenResponse;
 import net.minecraft.client.Minecraft;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.util.EntityUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.concurrent.*;
 
 public class CloudSettingsAPI {
     private static final Gson GSON = new Gson();
-    private static final CloseableHttpClient HTTP_CLIENT = httpClient();
+    private static final HttpClient HTTP_CLIENT = httpClient();
     private static String SESSION_TOKEN = null;
 
-    private static CloseableHttpClient httpClient() {
-        try {
-            SSLContextBuilder builder = new SSLContextBuilder();
-            builder.loadTrustMaterial(null, (x509Certificates, s) -> true);
-            SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), (hostname, session) -> true);
-            CloseableHttpClient client = HttpClients.custom().setSSLSocketFactory(sslsf).build();
-            return client;
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-            e.printStackTrace();
-        }
-        return null;
+    private static HttpClient httpClient() {
+        return HttpClient.newHttpClient();
     }
 
     private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private static final ScheduledFuture<?> syncTask = executor.scheduleWithFixedDelay(() -> {
         if (!CloudSettings.getStatus().isInitialized() || CloudSettings.getStatus().isErrored()) return;
         Collection<String> settings = CloudSettings.getPendingChanges().values();
-        if (settings.size() == 0) {
+        if (settings.isEmpty()) {
             CloudSettings.getLogger().debug("Skipping sync due to no changes.");
             return;
         }
 
-        HttpPost request = post("/storage/options");
-        if (request != null) {
+        var request = authorizedRequest("/storage/options").map(builder -> builder.POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(new OptionsResponse(settings.toArray(new String[settings.size()]))))).build());
+        if (request.isPresent()) {
             try {
-                StringEntity body = new StringEntity(GSON.toJson(new OptionsResponse(settings.toArray(new String[settings.size()]))));
-                request.setEntity(body);
-                try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-                    if (response.getStatusLine().getStatusCode() != 200) {
-                        CloudSettings.getLogger()
-                                .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
-                                        response.getStatusLine().getStatusCode(),
-                                        response.getStatusLine().getReasonPhrase());
-                    }
+                var response = HTTP_CLIENT.send(request.get(), responseInfo -> HttpResponse.BodySubscribers.ofString(Charset.defaultCharset()));
+                if (response.statusCode() != 200) {
+                    CloudSettings.getLogger()
+                            .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
+                                    response.statusCode(),
+                                    response.body());
                 }
                 CloudSettings.getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
                 CloudSettings.getPendingChanges().clear();
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -84,19 +62,13 @@ public class CloudSettingsAPI {
         CompletableFuture<String[]> future = new CompletableFuture<>();
 
         executor.submit(() -> {
-            HttpGet request = get("/storage/options");
-            if (request != null) {
-                try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-                    if (response.getStatusLine().getStatusCode() == 200) {
-                        OptionsResponse optionsResponse = resolveJsonBody(response, OptionsResponse.class);
-                        future.complete(optionsResponse.getOptions());
-                    } else {
-                        CloudSettings.getLogger()
-                                .error("Error on loading Options from Cloud.\nStatus Code: {}\nStatus Text: {}",
-                                        response.getStatusLine().getStatusCode(),
-                                        response.getStatusLine().getReasonPhrase());
-                    }
-                } catch (IOException e) {
+            var request = authorizedRequest("/storage/options").map(HttpRequest.Builder::build);
+            if (request.isPresent()) {
+                try {
+                    var response = HTTP_CLIENT.sendAsync(request.get(), responseInfo -> HttpResponse.BodySubscribers.ofString(Charset.defaultCharset()));
+                    OptionsResponse optionsResponse = GSON.fromJson(response.get().body(), OptionsResponse.class);
+                    future.complete(optionsResponse.getOptions());
+                } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
                     future.complete(new String[0]);
                 }
@@ -106,36 +78,18 @@ public class CloudSettingsAPI {
         return future;
     }
 
-    private static HttpGet get(final String url) {
+    private static Optional<HttpRequest.Builder> authorizedRequest(final String url) {
         if (checkLogin()) {
-            HttpGet get = new HttpGet(BuildConstants.API_BASE_URL + url);
-            get.addHeader(HttpHeaders.AUTHORIZATION, SESSION_TOKEN);
-            get.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            get.addHeader(HttpHeaders.ACCEPT, "application/json");
-            get.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
-            return get;
+            return Optional.of(
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(BuildConstants.API_BASE_URL + url))
+                            .header(HttpHeaders.AUTHORIZATION, SESSION_TOKEN)
+                            .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                            .header(HttpHeaders.ACCEPT, "application/json")
+                            .header(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT)
+            );
         }
-
-        return null;
-    }
-
-    private static HttpPost post(final String url) {
-        if (checkLogin()) {
-            HttpPost post = new HttpPost(BuildConstants.API_BASE_URL + url);
-            post.addHeader(HttpHeaders.AUTHORIZATION, SESSION_TOKEN);
-            post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            post.addHeader(HttpHeaders.ACCEPT, "application/json");
-            post.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
-            return post;
-        }
-        return null;
-    }
-
-    private static <T> T resolveJsonBody(CloseableHttpResponse response, Class<T> pojoClass) throws IOException {
-        HttpEntity entity = response.getEntity();
-        String responseBody = EntityUtils.toString(entity);
-        CloudSettings.getLogger().debug("Resolving response to {}\n{}", pojoClass.getName(), responseBody);
-        return GSON.fromJson(responseBody, pojoClass);
+        return Optional.empty();
     }
 
     public static void shutdown() {
@@ -148,22 +102,16 @@ public class CloudSettingsAPI {
             return;
         }
 
-        HttpPost request = post("/storage/options");
-        if (checkLogin()) {
+        var request = authorizedRequest("/storage/options").map(builder -> builder.POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(new OptionsResponse(settings.toArray(new String[settings.size()]))))).build());
+        if (checkLogin() && request.isPresent()) {
             try {
-                StringEntity body = new StringEntity(GSON.toJson(new OptionsResponse(settings.toArray(new String[settings.size()]))));
-                request.setEntity(body);
-                try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-                    if (response.getStatusLine().getStatusCode() != 200) {
-                        CloudSettings.getLogger()
-                                .error("Error on storing Options in Cloud.\nStatus Code: {}\nStatus Text: {}",
-                                        response.getStatusLine().getStatusCode(),
-                                        response.getStatusLine().getReasonPhrase());
-                    }
+                var response = HTTP_CLIENT.send(request.get(), responseInfo -> HttpResponse.BodySubscribers.discarding());
+                if (response.statusCode() != 200) {
+                    CloudSettings.getLogger().error("Error on storing Options in Cloud.\nStatus Code: {}", response.statusCode());
                 }
                 CloudSettings.getLogger().info("Synchronized {} Options with CloudSettings Cloud Storage", settings.size());
                 CloudSettings.getPendingChanges().clear();
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -174,32 +122,34 @@ public class CloudSettingsAPI {
         CloudSettings.getLogger().info("Starting Login...");
         // Get Server Id from backend
         try {
-            HttpPost requestServerId = new HttpPost(BuildConstants.API_BASE_URL + "/auth/serverId");
-            requestServerId.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
-            StringEntity body = new StringEntity(GSON.toJson(new ServerIdRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getProfileId().toString())));
-            requestServerId.setEntity(body);
+            HttpRequest requestServerId = HttpRequest.newBuilder()
+                    .uri(URI.create(BuildConstants.API_BASE_URL + "/auth/serverId"))
+                    .header(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT)
+                    .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(new ServerIdRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getProfileId().toString()))))
+                    .build();
 
             CloudSettings.getLogger().info("Requesting Server Id");
-            CloseableHttpResponse responseServerId = HTTP_CLIENT.execute(requestServerId);
+            var responseServerId = HTTP_CLIENT.sendAsync(requestServerId, responseInfo -> HttpResponse.BodySubscribers.ofString(Charset.defaultCharset()));
             CloudSettings.getLogger().info("Requested Server Id");
-            ServerIdResponse serverIdResponse = resolveJsonBody(responseServerId, ServerIdResponse.class);
+            ServerIdResponse serverIdResponse = GSON.fromJson(responseServerId.get().body(), ServerIdResponse.class);
             CloudSettings.getLogger().info("Resolved Server Id: {}", serverIdResponse);
             if (serverIdResponse == null) throw new IllegalStateException("Invalid Response from Server.");
-            responseServerId.close();
+
             // Tell Mojang to log us in
             CloudSettings.getLogger().info("Login in into Mojang Session Server");
             Minecraft.getInstance().services().sessionService().joinServer(CloudSettings.getUser().getProfileId(), CloudSettings.getUser().getAccessToken(), serverIdResponse.getServerId());
             CloudSettings.getLogger().info("Logged in into Mojang Session Server");
             // Tell Backend that we're logged in
-            HttpPost requestSessionToken = new HttpPost(BuildConstants.API_BASE_URL + "/auth/notify");
-            requestSessionToken.addHeader(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT);
-            requestSessionToken.setEntity(new StringEntity(GSON.toJson(new BackendSessionTokenRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getProfileId().toString(), serverIdResponse.getServerId()))));
+            HttpRequest requestSessionToken = HttpRequest.newBuilder()
+                    .uri(URI.create(BuildConstants.API_BASE_URL + "/auth/notify"))
+                    .header(HttpHeaders.USER_AGENT, BuildConstants.HTTP_USER_AGENT)
+                    .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(new BackendSessionTokenRequest(CloudSettings.getUser().getName(), CloudSettings.getUser().getProfileId().toString(), serverIdResponse.getServerId()))))
+                    .build();
             CloudSettings.getLogger().info("Requesting Session Token");
-            CloseableHttpResponse responseSessionToken = HTTP_CLIENT.execute(requestSessionToken);
+            var responseSessionToken = HTTP_CLIENT.sendAsync(requestSessionToken, responseInfo -> HttpResponse.BodySubscribers.ofString(Charset.defaultCharset()));
             CloudSettings.getLogger().info("Requested Session Token");
-            SessionTokenResponse sessionTokenResponse = resolveJsonBody(responseSessionToken, SessionTokenResponse.class);
+            SessionTokenResponse sessionTokenResponse = GSON.fromJson(responseSessionToken.get().body(), SessionTokenResponse.class);
             CloudSettings.getLogger().info("Resolved Session Token");
-            responseSessionToken.close();
 
             CloudSettings.getLogger().info("Login Successful");
             SESSION_TOKEN = sessionTokenResponse.getToken();

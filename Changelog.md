@@ -1,3 +1,7 @@
+# 2.0.0.11
+
+- Add compatibility for 1.21.11
+
 # 2.0.0.10
 
 - Add compatibility for 1.21.9
